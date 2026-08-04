@@ -237,6 +237,9 @@ export const DESKTOP_MENU: DesktopMenu[] = [
       { type: "item", labelKey: "desktop.menu.back", command: "common.goBack", accelerator: { macos: "Cmd+[" } },
       { type: "item", labelKey: "desktop.menu.forward", command: "common.goForward", accelerator: { macos: "Cmd+]" } },
       { type: "separator" },
+      { type: "item", labelKey: "desktop.menu.back", command: "tab.prev", accelerator: { macos: "Alt+Cmd+Left" } },
+      { type: "item", labelKey: "desktop.menu.forward", command: "tab.next", accelerator: { macos: "Alt+Cmd+Right" } },
+      { type: "separator" },
       {
         type: "item",
         labelKey: "desktop.menu.previousSession",
