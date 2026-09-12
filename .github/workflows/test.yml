@@ -71,8 +71,12 @@ jobs:
         if: runner.os == 'Windows'
         run: choco install ripgrep --no-progress -y
 
+      # opencode:test runs its CLI-subprocess tests serially on Windows (see
+      # test/lib/cli-process.ts cliIt.concurrent), and GitHub-hosted
+      # windows-latest spawns processes far slower than Linux, so the package
+      # alone can exceed the 20 minutes that fits Linux comfortably.
       - name: Run unit tests
-        timeout-minutes: 20
+        timeout-minutes: ${{ matrix.settings.name == 'windows' && 60 || 20 }}
         run: GITHUB_ACTIONS=false bun turbo test
         env:
           OPENCODE_EXPERIMENTAL_DISABLE_FILEWATCHER: ${{ runner.os == 'Windows' && 'true' || 'false' }}
