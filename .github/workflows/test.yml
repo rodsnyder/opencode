@@ -80,6 +80,15 @@ jobs:
         run: GITHUB_ACTIONS=false bun turbo test
         env:
           OPENCODE_EXPERIMENTAL_DISABLE_FILEWATCHER: ${{ runner.os == 'Windows' && 'true' || 'false' }}
+          # Two Windows-only tests (external-directory, read) strip the drive
+          # letter from a temp path and expect it to resolve back to the same
+          # file, which assumes temp and the checkout share a drive. On
+          # windows-latest the checkout is D:\a\opencode but %TEMP% is on C:,
+          # so the drive-less path lands on D:\users\... instead. runner.temp
+          # (D:\a\_temp) is on the checkout's drive. Windows only; Linux
+          # reads TMPDIR and is left alone.
+          TMP: ${{ runner.os == 'Windows' && runner.temp || '' }}
+          TEMP: ${{ runner.os == 'Windows' && runner.temp || '' }}
 
       - name: Check generated client
         if: runner.os == 'Linux'
