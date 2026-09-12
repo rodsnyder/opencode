@@ -86,7 +86,11 @@ test("animates todo lifecycle without replaying it across session tabs", async (
   await switchSession(page, otherID, otherTitle)
   await expect(dock).toHaveCount(0)
 
-  const returningOpen = sampleDock(page, 700)
+  // Sample until the dock first appears rather than for a fixed window: the
+  // assertion is about the FIRST present frame, and on a slow runner the
+  // navigation back can take longer than any fixed window, leaving zero
+  // present samples and a failure that says nothing about replay.
+  const returningOpen = sampleDock(page, 10_000, { untilPresent: true })
   await switchSession(page, sourceID, sourceTitle)
   const openSamples = (await returningOpen).filter((sample) => sample.present)
   expect(openSamples.length).toBeGreaterThan(0)
@@ -170,21 +174,29 @@ async function switchSession(page: Page, sessionID: string, title: string) {
   await expectSessionTitle(page, title)
 }
 
-function sampleDock(page: Page, duration: number) {
-  return page.evaluate(async (duration) => {
-    const samples: { present: boolean; height: number; opacity: number }[] = []
-    const start = performance.now()
-    while (performance.now() - start < duration) {
-      const dock = document.querySelector<HTMLElement>('[data-component="session-todo-dock"]')
-      const clip = dock?.parentElement?.parentElement
-      const label = dock?.querySelector<HTMLElement>('[data-action="session-todo-toggle"] span[aria-label]')
-      samples.push({
-        present: !!dock,
-        height: clip?.getBoundingClientRect().height ?? 0,
-        opacity: label ? Number.parseFloat(getComputedStyle(label).opacity) : 0,
-      })
-      await new Promise(requestAnimationFrame)
-    }
-    return samples
-  }, duration)
+// `duration` is the sampling window. With `untilPresent`, it is instead a cap:
+// sampling stops a few frames after the dock is first seen, so the caller
+// gets the first present frame without racing a navigation against a clock.
+function sampleDock(page: Page, duration: number, opts: { untilPresent?: boolean } = {}) {
+  return page.evaluate(
+    async ({ duration, untilPresent }) => {
+      const samples: { present: boolean; height: number; opacity: number }[] = []
+      const start = performance.now()
+      let framesSincePresent = -1
+      while (performance.now() - start < duration && framesSincePresent < 5) {
+        const dock = document.querySelector<HTMLElement>('[data-component="session-todo-dock"]')
+        const clip = dock?.parentElement?.parentElement
+        const label = dock?.querySelector<HTMLElement>('[data-action="session-todo-toggle"] span[aria-label]')
+        samples.push({
+          present: !!dock,
+          height: clip?.getBoundingClientRect().height ?? 0,
+          opacity: label ? Number.parseFloat(getComputedStyle(label).opacity) : 0,
+        })
+        if (untilPresent && (dock || framesSincePresent >= 0)) framesSincePresent++
+        await new Promise(requestAnimationFrame)
+      }
+      return samples
+    },
+    { duration, untilPresent: !!opts.untilPresent },
+  )
 }
