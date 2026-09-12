@@ -75,20 +75,28 @@ jobs:
       # test/lib/cli-process.ts cliIt.concurrent), and GitHub-hosted
       # windows-latest spawns processes far slower than Linux, so the package
       # alone can exceed the 20 minutes that fits Linux comfortably.
+      # Five Windows-only tests (external-directory, read, shell permissions)
+      # strip the drive letter from a temp path and expect it to resolve back
+      # to the same file. That holds only if (a) temp is on the checkout's
+      # drive - a drive-less path resolves against the current drive - and
+      # (b) temp's first segment is not a single letter, because the path
+      # normalizer reads Git-Bash style /x/... as drive X:. windows-latest
+      # breaks (a): checkout on D:\a, %TEMP% on C:. runner.temp (D:\a\_temp)
+      # fixes (a) but breaks (b): /a/_temp becomes A:\_temp. D:\tmp satisfies
+      # both. Blacksmith kept everything on C: so upstream never hit this.
+      - name: Put temp on the checkout's drive (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          drive="${GITHUB_WORKSPACE%%:*}"
+          mkdir -p "/${drive,,}/tmp"
+          echo "TMP=${drive}:\\tmp" >> "$GITHUB_ENV"
+          echo "TEMP=${drive}:\\tmp" >> "$GITHUB_ENV"
+
       - name: Run unit tests
         timeout-minutes: ${{ matrix.settings.name == 'windows' && 60 || 20 }}
         run: GITHUB_ACTIONS=false bun turbo test
         env:
           OPENCODE_EXPERIMENTAL_DISABLE_FILEWATCHER: ${{ runner.os == 'Windows' && 'true' || 'false' }}
-          # Two Windows-only tests (external-directory, read) strip the drive
-          # letter from a temp path and expect it to resolve back to the same
-          # file, which assumes temp and the checkout share a drive. On
-          # windows-latest the checkout is D:\a\opencode but %TEMP% is on C:,
-          # so the drive-less path lands on D:\users\... instead. runner.temp
-          # (D:\a\_temp) is on the checkout's drive. Windows only; Linux
-          # reads TMPDIR and is left alone.
-          TMP: ${{ runner.os == 'Windows' && runner.temp || '' }}
-          TEMP: ${{ runner.os == 'Windows' && runner.temp || '' }}
 
       - name: Check generated client
         if: runner.os == 'Linux'
