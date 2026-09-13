@@ -432,6 +432,11 @@ describe("tool.shell permissions", () => {
           item,
           Effect.gen(function* () {
             const tmp = yield* tmpdirScoped()
+            // Drive-relative means "relative to that drive's current directory",
+            // which is only the test cwd when the drive is the cwd's own. Take it
+            // from tmp rather than hardcoding C:, so the test holds on runners
+            // whose temp lives on another drive.
+            const drive = tmp.slice(0, 2)
             yield* runIn(
               tmp,
               Effect.gen(function* () {
@@ -440,7 +445,7 @@ describe("tool.shell permissions", () => {
                 expect(
                   yield* fail(
                     {
-                      command: 'Get-Content "C:../outside.txt"',
+                      command: `Get-Content "${drive}../outside.txt"`,
                     },
                     capture(requests, err),
                   ),
