@@ -25,6 +25,10 @@ jobs:
   # Native runners required: bun install cross-compilation flags (--os/--cpu)
   # do not produce byte-identical node_modules as native installs.
   compute-hash:
+    # Upstream-only: the hashes are consumed by update-hashes below, which needs
+    # the OPENCODE_APP_* GitHub App. On forks the ~30 min of native runners
+    # would produce artifacts nothing reads, so skip the whole workflow.
+    if: github.repository == 'anomalyco/opencode'
     strategy:
       fail-fast: false
       matrix:
@@ -91,7 +95,9 @@ jobs:
   update-hashes:
     needs: compute-hash
     # Commits back via the OPENCODE_APP_* GitHub App, which only exists upstream;
-    # on forks the token step fails ("appId option is required"), so skip it there.
+    # on forks the token step fails ("appId option is required"). The guard on
+    # compute-hash already skips this via `needs`; kept so it also holds under
+    # workflow_dispatch.
     if: github.event_name != 'pull_request' && github.repository == 'anomalyco/opencode'
     runs-on: ubuntu-latest
 
