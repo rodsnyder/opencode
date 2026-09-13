@@ -67,18 +67,21 @@ describe("opencode run (non-interactive subprocess)", () => {
   // makes the SDK call surface an error promptly so the process exits nonzero.
   // We assert nonzero exit AND wall-clock under the harness timeout — a hang
   // would expire the timeout and produce a different (signal-killed) failure.
+  // The bound is the harness default (30s), not tighter: on GitHub-hosted
+  // ubuntu-latest the cold `bun src/index.ts` spawn under concurrent siblings
+  // alone exceeded a 15s bound, which is CLI startup cost, not the hang.
   cliIt.concurrent(
     "exits nonzero promptly when the model is unknown (regression for #27371)",
     ({ opencode }) =>
       Effect.gen(function* () {
         const result = yield* opencode.run("say hi", {
           model: "test/nonexistent-model",
-          timeoutMs: 15_000,
+          timeoutMs: 30_000,
         })
         expect(result.exitCode).not.toBe(0)
-        expect(result.durationMs).toBeLessThan(15_000)
+        expect(result.durationMs).toBeLessThan(30_000)
       }),
-    30_000,
+    60_000,
   )
 
   // The test provider's SSE error item is interpreted by the SDK as an unknown
