@@ -17,6 +17,10 @@ on:
 
 jobs:
   close:
+    # Upstream-only: the script targets anomalyco/opencode by default, and a
+    # fork's GITHUB_TOKEN cannot write to upstream (403 on comment creation).
+    # On forks the workflow is a no-op.
+    if: github.repository == 'anomalyco/opencode'
     runs-on: ubuntu-latest
     timeout-minutes: 240
     permissions:
