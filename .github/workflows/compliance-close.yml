@@ -13,6 +13,9 @@ permissions:
 
 jobs:
   close-non-compliant:
+    # Upstream maintainer policing (needs:compliance windows, TEAM_MEMBERS).
+    # Meaningless on forks, so make it a no-op there.
+    if: github.repository == 'anomalyco/opencode'
     runs-on: ubuntu-latest
     steps:
       - name: Close non-compliant issues and PRs after 2 hours

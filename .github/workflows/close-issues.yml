@@ -7,6 +7,9 @@ on:
 
 jobs:
   close:
+    # Upstream-only: the script hardcodes anomalyco/opencode, and a fork's
+    # GITHUB_TOKEN cannot write to upstream (403). On forks this is a no-op.
+    if: github.repository == 'anomalyco/opencode'
     runs-on: ubuntu-latest
     permissions:
       contents: read
