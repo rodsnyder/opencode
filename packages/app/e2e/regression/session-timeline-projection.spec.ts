@@ -165,6 +165,8 @@ test.describe("session timeline projection", () => {
     await expect(page.locator('[data-slot="user-message-comments"]')).toBeVisible()
     await expect(page.getByText("Keep this stable", { exact: true })).toBeVisible()
     await expect(page.getByText("a.ts:4-8")).toBeVisible()
+    await expect(page.locator('[data-timeline-row="DiffSummary"]')).toBeVisible()
+    await expect(page.getByText(/show all/i)).toBeVisible()
   })
 
   test("renders interruption independently when the turn is not compacted", async ({ page }) => {
