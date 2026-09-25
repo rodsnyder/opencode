@@ -128,7 +128,7 @@ test.describe("session timeline projection", () => {
     await expect(page.locator('[data-timeline-row="TurnGap"]')).toBeVisible()
   })
 
-  test("renders comment strips and historical diff summary overflow", async ({ page }) => {
+  test("renders comments inline and the current turn's diff summary overflow", async ({ page }) => {
     const user = userMessage(
       [
         userText("The user made the following comment regarding lines 4 through 8 of src/a.ts: Keep this stable", {
@@ -152,17 +152,19 @@ test.describe("session timeline projection", () => {
       parentID: "msg_2000_diff_next_user",
       created: 1700000011000,
     })
-    await setupTimeline(page, {
-      messages: [user, assistantMessage(), nextUser, nextAssistant],
-      settings: { newLayoutDesigns: false },
-    })
+    // Post-sunset (oldInterfaceSunset 2026-09-14, settings.tsx) the old
+    // interface is retired: newLayoutDesigns is forced on, comments render
+    // INLINE inside the user message (projection.ts binds inlineComments to
+    // newLayoutDesigns), and the legacy CommentStrip/DiffSummary row types
+    // are never created. This test now asserts the new layout's rendering;
+    // the legacy assertions were the deterministic failure behind 5b5f7b97.
+    await setupTimeline(page, { messages: [user, assistantMessage(), nextUser, nextAssistant] })
     const scroller = page.locator(".scroll-view__viewport", { has: page.locator("[data-timeline-row]") })
     await scroller.evaluate((element) => (element.scrollTop = 0))
 
-    await expect(page.locator('[data-timeline-row="CommentStrip"]')).toBeVisible()
+    await expect(page.locator('[data-slot="user-message-comments"]')).toBeVisible()
     await expect(page.getByText("Keep this stable", { exact: true })).toBeVisible()
-    await expect(page.locator('[data-timeline-row="DiffSummary"]')).toBeVisible()
-    await expect(page.getByText(/show all/i)).toBeVisible()
+    await expect(page.getByText("a.ts:4-8")).toBeVisible()
   })
 
   test("renders interruption independently when the turn is not compacted", async ({ page }) => {
