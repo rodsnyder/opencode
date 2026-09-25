@@ -407,7 +407,10 @@ jobs:
       - build-cli
       - sign-cli-windows
       - build-electron
-    if: always() && !failure() && !cancelled()
+    # Upstream-only, same as its producers: on forks version/build-cli are
+    # skipped, so the opencode-cli artifact never exists and this job would
+    # fail every push with "Artifact not found" (fork-only noise, cf. PR #2).
+    if: github.repository == 'anomalyco/opencode' && always() && !failure() && !cancelled()
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
