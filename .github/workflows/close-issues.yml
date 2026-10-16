@@ -1,8 +1,8 @@
 name: close-issues
 
 on:
-  schedule:
-    - cron: "0 2 * * *" # Daily at 2:00 AM
+  # schedule removed on the rodsnyder/opencode fork: the job is gated to anomalyco/opencode,
+  # and the empty runs got the fork's Actions throttled by GitHub.
   workflow_dispatch:
 
 jobs:
