@@ -1,9 +1,8 @@
 name: compliance-close
 
 on:
-  schedule:
-    # Run every 30 minutes to check for expired compliance windows
-    - cron: "*/30 * * * *"
+  # schedule removed on the rodsnyder/opencode fork: the job is gated to anomalyco/opencode,
+  # and the empty runs got the fork's Actions throttled by GitHub.
   workflow_dispatch:
 
 permissions:
