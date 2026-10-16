@@ -26,6 +26,12 @@ type ProviderOptions = Record<string, Record<string, JSONValue>>
 const realFetch = globalThis.fetch
 let captured: Captured | null = null
 
+// The native OpenAI/Anthropic SDKs read these at construction time. A developer
+// shell that points them elsewhere (e.g. OpenRouter) reroutes the upstream URL
+// the gateway provider sees, so the mock answers in the wrong wire format.
+const ENDPOINT_ENV = ["OPENAI_BASE_URL", "ANTHROPIC_BASE_URL"] as const
+const savedEnv: Partial<Record<(typeof ENDPOINT_ENV)[number], string>> = {}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
 }
@@ -82,6 +88,10 @@ function upstreamResponseBody(provider: string | undefined) {
 
 beforeEach(() => {
   captured = null
+  for (const name of ENDPOINT_ENV) {
+    savedEnv[name] = process.env[name]
+    delete process.env[name]
+  }
   const handle = async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]): Promise<Response> => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url
     if (url.startsWith("https://gateway.ai.cloudflare.com/")) {
@@ -110,6 +120,10 @@ beforeEach(() => {
 
 afterEach(() => {
   globalThis.fetch = realFetch
+  for (const name of ENDPOINT_ENV) {
+    if (savedEnv[name] === undefined) delete process.env[name]
+    else process.env[name] = savedEnv[name]
+  }
 })
 
 // Mirrors the runtime npm rewrite in provider.ts: openai/anthropic models carry
